@@ -1,5 +1,3 @@
-import java.io.File
-
 fun main() {
 
     fun toCalorieList(input: List<String>): MutableList<Int> {
