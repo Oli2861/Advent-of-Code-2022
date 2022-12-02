@@ -5,6 +5,19 @@ enum class Result(val score: Int) {
 enum class Choice(val score: Int) {
     ROCK(1), PAPER(2), SCISSORS(3);
 
+    companion object {
+        val winsAgainstMap = mapOf(
+            ROCK to PAPER,
+            PAPER to SCISSORS,
+            SCISSORS to ROCK
+        )
+    }
+
+    private val losesTo: Choice
+        get() {
+            return winsAgainstMap[this]!!
+        }
+
     fun scoreAgainst(other: Choice): Int {
         if (this == other) return Result.Draw.score
         return when (this) {
@@ -14,23 +27,13 @@ enum class Choice(val score: Int) {
         }
     }
 
-    fun findLoser(): Choice {
-        return when (this) {
-            ROCK -> SCISSORS
-            PAPER -> ROCK
-            SCISSORS -> PAPER
+    fun getChoiceForDesiredResult(desiredResult: Result): Choice {
+        return when (desiredResult) {
+            Result.WIN -> this.losesTo
+            Result.Draw -> this
+            Result.Lose -> this.losesTo.losesTo
         }
     }
-
-    fun findWinner(): Choice {
-        return when (this) {
-            ROCK -> PAPER
-            PAPER -> SCISSORS
-            SCISSORS -> ROCK
-        }
-    }
-
-    fun findDraw(): Choice = this
 }
 
 val charChoiceMap = mapOf(
@@ -47,6 +50,8 @@ val requiredResult = mapOf(
     'X' to Result.Lose,
     'Z' to Result.WIN
 )
+// For fun: task 1 in one line :D (still using maps / enum classes though :o )
+// fun getTotalScoresInOneLine(choices: List<String>) = choices.map { Pair(charChoiceMap[it[2]], charChoiceMap[it[0]]) }.sumOf { it.first!!.score + if (it.first == it.second) Result.Draw.score else { if (it.first == Choice.ROCK) { if (it.second == Choice.SCISSORS) Result.WIN.score else Result.Lose.score } else if (it.first == Choice.PAPER) { if (it.second == Choice.ROCK) Result.WIN.score else Result.Lose.score } else { if (it.second == Choice.PAPER) Result.WIN.score else Result.Lose.score } } }
 
 fun getChoices(input: String): Pair<Choice, Choice>? {
     val playerChoice: Choice = charChoiceMap[input[2]] ?: return null
@@ -55,7 +60,7 @@ fun getChoices(input: String): Pair<Choice, Choice>? {
 }
 
 @JvmName("getTotalScores1")
-fun getTotalScores(choices: List<String>) = getTotalScores(choices.map{getChoices(it)})
+fun getTotalScores(choices: List<String>) = getTotalScores(choices.map { getChoices(it) })
 
 fun getTotalScores(choices: List<Pair<Choice, Choice>?>) = choices.sumOf {
     if (it != null) getScore(it.first, it.second) else 0
@@ -63,15 +68,10 @@ fun getTotalScores(choices: List<Pair<Choice, Choice>?>) = choices.sumOf {
 
 fun getScore(playerChoice: Choice, opponentChoice: Choice): Int =
     playerChoice.score + playerChoice.scoreAgainst(opponentChoice)
-
 fun makeDecision(character: Char, opponentChoice: Char): Pair<Choice, Choice>? {
     val oppChoice: Choice = charChoiceMap[opponentChoice] ?: return null
-    val playerChoice =  when (requiredResult[character]) {
-        Result.WIN -> oppChoice.findWinner()
-        Result.Draw -> oppChoice.findDraw()
-        Result.Lose -> oppChoice.findLoser()
-        else -> null
-    } ?: return null
+    val requiredResult = requiredResult[character] ?: return null
+    val playerChoice = oppChoice.getChoiceForDesiredResult(requiredResult)
     return Pair(playerChoice, oppChoice)
 }
 
@@ -89,6 +89,5 @@ fun main() {
 
     val result2 = playWithElfInstruction(testInput)
     println(result2)
-    check(result == 11258)
-
+    check(result2 == 11258)
 }
